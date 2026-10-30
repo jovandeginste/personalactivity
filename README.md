@@ -41,7 +41,7 @@ make test
 make lint
 ```
 
-Prebuilt Linux binaries (`amd64` and `arm64`) are also published on [GitHub Releases](https://github.com/jovandeginste/personalactivity/releases).
+Prebuilt Linux `amd64` binaries are also published on [GitHub Releases](https://github.com/jovandeginste/personalactivity/releases).
 
 ## Usage
 

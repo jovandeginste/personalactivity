@@ -17,9 +17,9 @@ jobs:
     strategy:
       matrix:
         # build and publish in parallel:
-        # linux/amd64, linux/arm64
+        # linux/amd64
         goos: [linux]
-        goarch: [amd64, arm64]
+        goarch: [amd64]
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Set BUILD_TIME env
