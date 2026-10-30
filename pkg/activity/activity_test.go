@@ -1,0 +1,49 @@
+package activity
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+)
+
+type testSource struct {
+	name   string
+	events []Event
+}
+
+func (s testSource) Name() string                             { return s.name }
+func (s testSource) Collect(context.Context) ([]Event, error) { return s.events, nil }
+
+func TestCollectFiltersAndSorts(t *testing.T) {
+	base := time.Date(2026, 10, 30, 0, 0, 0, 0, time.UTC)
+	events, err := Collect(context.Background(), []Source{
+		testSource{name: "first", events: []Event{{Date: base.Add(2 * time.Hour)}}},
+		testSource{name: "second", events: []Event{{Date: base.Add(time.Hour)}}},
+	}, []string{"first", "second"}, Range{From: &base})
+	require.NoError(t, err)
+	require.Len(t, events, 2)
+	require.True(t, events[0].Date.Equal(base.Add(time.Hour)))
+}
+
+func TestParseRangeIncludesWholeToDate(t *testing.T) {
+	rangeFilter, err := ParseRange("2026-10-30", "2026-10-30")
+	require.NoError(t, err)
+	require.Equal(t, "2026-10-31T00:00:00Z", rangeFilter.To.Format(time.RFC3339))
+}
+
+func TestCollectRejectsUnknownSource(t *testing.T) {
+	_, err := Collect(context.Background(), []Source{testSource{name: "known"}}, []string{"unknown"}, Range{})
+	require.Error(t, err)
+}
+
+func TestParseRangeDefaultsToToday(t *testing.T) {
+	rangeFilter, err := ParseRange("", "")
+	require.NoError(t, err)
+	require.Equal(t, 0, rangeFilter.From.Hour())
+	require.Equal(t, 0, rangeFilter.From.Minute())
+	require.Equal(t, 0, rangeFilter.From.Second())
+	require.False(t, rangeFilter.To.Before(*rangeFilter.From))
+	require.False(t, rangeFilter.To.After(time.Now().Add(time.Second)))
+}

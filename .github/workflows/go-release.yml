@@ -1,0 +1,47 @@
+# .github/workflows/go-release.yml
+
+on:
+  push:
+    branches: [master]
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  releases-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # build and publish in parallel:
+        # linux/amd64, linux/arm64
+        goos: [linux]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Set BUILD_TIME env
+        run: echo BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> ${GITHUB_ENV}
+
+      - name: Ensure master release exists
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release view master || gh release create master --title "master" --notes "Latest build from master" --prerelease || gh release view master
+
+      - uses: wangyoucao577/go-release-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          overwrite: true
+          multi_binaries: true
+          project_path: ./cmd/...
+          ldflags: |
+            -X "main.buildTime=${{ env.BUILD_TIME }}"
+            -X main.gitCommit=${{ github.sha }}
+            -X main.gitRef=${{ github.ref }}
+            -X main.gitRefName=${{ github.ref_name }}
+            -X main.gitRefType=${{ github.ref_type }}
