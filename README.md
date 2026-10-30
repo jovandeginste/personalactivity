@@ -4,7 +4,7 @@
 
 ## Overview
 
-When summarizing a workday or checking what you worked on during a specific period, relevant context is spread across git forges, shell history, editor undo history, and AI coding sessions. `personalactivity` reads these sources (in read-only mode where applicable), filters events by date range and source, and outputs them as a table or JSON.
+When summarizing a workday or checking what you worked on during a specific period, relevant context is spread across git forges, shell history, editor undo history, AI coding sessions, emails, calendar events, and browser history. `personalactivity` reads these sources (in read-only mode where applicable), filters events by date range and source, and outputs them as a table or JSON.
 
 ### Supported Sources
 
@@ -12,8 +12,8 @@ When summarizing a workday or checking what you worked on during a specific peri
 - **`atuin`**: Local shell command history read in read-only mode from `~/.local/share/atuin/history.db`.
 - **`vimundo`**: Neovim/Vim undo history files parsed from `~/.local/state/nvf/undo`.
 - **`opencode`**: User prompts and session metadata read in read-only mode from `~/.local/share/opencode/opencode.db`.
-- **`thunderbird`**: Sent emails (timestamps, destination addresses, subjects, and bodies) read in read-only mode from `~/.thunderbird/*/global-messages-db.sqlite`.
-- **`firefox`**: Visited URLs read in read-only mode from `places.sqlite` in the default Firefox profile (`~/.mozilla/firefox`).
+- **`thunderbird`**: Sent emails (timestamps, sender and destination addresses, subjects, and bodies) from `~/.thunderbird/*/global-messages-db.sqlite` and calendar events (timestamps, calendar names, titles, locations, descriptions, organizers, and attendees) from `~/.thunderbird/*/calendar-data/cache.sqlite`, read in read-only mode.
+- **`firefox`**: Visited URLs (visit timestamps, hosts, page titles, URLs, and descriptions) read in read-only mode from `places.sqlite` in the default Firefox profile resolved via `~/.mozilla/firefox/profiles.ini`.
 
 ## Implementation
 
@@ -24,8 +24,8 @@ The project is written in Go and structured into reusable packages under `./pkg/
 - `pkg/atuin`: Queries the local SQLite database via `gorm` and `glebarez/sqlite` (pure Go SQLite).
 - `pkg/vimundo`: Binary parser for Vim's `VimˆUnDo` undo file format.
 - `pkg/opencode`: Queries user session messages from the local OpenCode SQLite database.
-- `pkg/thunderbird`: Queries sent emails from the local Thunderbird global messages SQLite database.
-- `pkg/firefox`: Queries visited URLs from `places.sqlite` in the default Firefox profile.
+- `pkg/thunderbird`: Queries sent emails (`global-messages-db.sqlite`) and calendar events (`calendar-data/cache.sqlite`) from local Thunderbird profiles.
+- `pkg/firefox`: Resolves the default Firefox profile from `profiles.ini` and queries visited URLs and metadata from `places.sqlite` in read-only mode.
 
 ## Build and Install
 

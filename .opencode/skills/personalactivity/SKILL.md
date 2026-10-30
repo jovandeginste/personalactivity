@@ -30,5 +30,7 @@ Do not hard-code or assume a list of event sources. A plain `personalactivity --
 
 - State the time range used when it differs from today.
 - Distinguish observed activity from inference.
+- For `thunderbird` events, distinguish sent emails (`attributes.message_id`) from calendar events (`attributes.event_id`, `attributes.calendar`, `attributes.start`/`attributes.end`, `attributes.location`, `attributes.organizer`, `attributes.attendees`), and filter out irrelevant shared/free-busy calendars when summarizing the user's own work.
+- For `firefox` events (`topic` = host, `attributes.url`, `attributes.title`, `attributes.description`), group related browsing visits by domain/topic or task rather than listing every individual page load, and omit routine/background noise unless relevant.
 - If no events match, say so plainly and suggest widening the date range or removing a source filter.
-- Keep raw command text, commit messages, and prompts to the minimum needed for the requested summary; they can contain sensitive details.
+- Keep raw command text, commit messages, prompts, email bodies, meeting descriptions, and full URLs (especially query parameters/tokens) to the minimum needed for the requested summary; they can contain sensitive details.
