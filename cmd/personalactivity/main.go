@@ -9,8 +9,10 @@ import (
 
 	"github.com/jovandeginste/personalactivity/pkg/activity"
 	"github.com/jovandeginste/personalactivity/pkg/atuin"
+	"github.com/jovandeginste/personalactivity/pkg/firefox"
 	"github.com/jovandeginste/personalactivity/pkg/gitea"
 	"github.com/jovandeginste/personalactivity/pkg/opencode"
+	"github.com/jovandeginste/personalactivity/pkg/thunderbird"
 	"github.com/jovandeginste/personalactivity/pkg/vimundo"
 	"github.com/spf13/cobra"
 )
@@ -37,6 +39,8 @@ func main() {
 				atuin.New(defaultAtuinPath(currentUser.HomeDir)),
 				vimundo.New(defaultVimUndoPath(currentUser.HomeDir)),
 				opencode.New(defaultOpenCodePath(currentUser.HomeDir)),
+				thunderbird.New(defaultThunderbirdPath(currentUser.HomeDir)),
+				firefox.New(defaultFirefoxPath(currentUser.HomeDir)),
 			}
 			events, err := activity.Collect(context.Background(), sources, sourceNames, rangeFilter)
 			if err != nil {
@@ -48,7 +52,7 @@ func main() {
 
 	cmd.Flags().StringVar(&from, "from", "", "start date (YYYY-MM-DD or RFC3339)")
 	cmd.Flags().StringVar(&to, "to", "", "end date (YYYY-MM-DD or RFC3339)")
-	cmd.Flags().StringSliceVarP(&sourceNames, "source", "s", nil, "source to collect (gitea, atuin, vimundo, or opencode; repeatable)")
+	cmd.Flags().StringSliceVarP(&sourceNames, "source", "s", nil, "source to collect (gitea, atuin, vimundo, opencode, thunderbird, or firefox; repeatable)")
 	cmd.Flags().StringVarP(&format, "format", "o", "table", "output format: table or json")
 	cmd.InitDefaultCompletionCmd()
 
@@ -68,4 +72,12 @@ func defaultVimUndoPath(home string) string {
 
 func defaultOpenCodePath(home string) string {
 	return filepath.Join(home, ".local", "share", "opencode", "opencode.db")
+}
+
+func defaultThunderbirdPath(home string) string {
+	return filepath.Join(home, ".thunderbird")
+}
+
+func defaultFirefoxPath(home string) string {
+	return filepath.Join(home, ".mozilla", "firefox")
 }

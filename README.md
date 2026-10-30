@@ -12,6 +12,8 @@ When summarizing a workday or checking what you worked on during a specific peri
 - **`atuin`**: Local shell command history read in read-only mode from `~/.local/share/atuin/history.db`.
 - **`vimundo`**: Neovim/Vim undo history files parsed from `~/.local/state/nvf/undo`.
 - **`opencode`**: User prompts and session metadata read in read-only mode from `~/.local/share/opencode/opencode.db`.
+- **`thunderbird`**: Sent emails (timestamps, destination addresses, subjects, and bodies) read in read-only mode from `~/.thunderbird/*/global-messages-db.sqlite`.
+- **`firefox`**: Visited URLs read in read-only mode from `places.sqlite` in the default Firefox profile (`~/.mozilla/firefox`).
 
 ## Implementation
 
@@ -22,6 +24,8 @@ The project is written in Go and structured into reusable packages under `./pkg/
 - `pkg/atuin`: Queries the local SQLite database via `gorm` and `glebarez/sqlite` (pure Go SQLite).
 - `pkg/vimundo`: Binary parser for Vim's `VimˆUnDo` undo file format.
 - `pkg/opencode`: Queries user session messages from the local OpenCode SQLite database.
+- `pkg/thunderbird`: Queries sent emails from the local Thunderbird global messages SQLite database.
+- `pkg/firefox`: Queries visited URLs from `places.sqlite` in the default Firefox profile.
 
 ## Build and Install
 
@@ -55,7 +59,7 @@ personalactivity [flags]
 
 - `--from string`: Start date (`YYYY-MM-DD` or `RFC3339`).
 - `--to string`: End date (`YYYY-MM-DD` or `RFC3339`). When given as `YYYY-MM-DD`, the entire end day is included.
-- `-s, --source strings`: Source(s) to collect (`gitea`, `atuin`, `vimundo`, `opencode`). Can be repeated or comma-separated. Defaults to all sources.
+- `-s, --source strings`: Source(s) to collect (`gitea`, `atuin`, `vimundo`, `opencode`, `thunderbird`, `firefox`). Can be repeated or comma-separated. Defaults to all sources.
 - `-o, --format string`: Output format: `table` or `json` (default `table`).
 
 ### Examples
