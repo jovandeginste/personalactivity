@@ -27,6 +27,15 @@ func TestCollectFiltersAndSorts(t *testing.T) {
 	require.True(t, events[0].Date.Equal(base.Add(time.Hour)))
 }
 
+func TestCollectFiltersToSelectedSource(t *testing.T) {
+	events, err := Collect(context.Background(), []Source{
+		testSource{name: "selected", events: []Event{{}}},
+		testSource{name: "unselected", events: []Event{{}}},
+	}, []string{"selected"}, Range{})
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+}
+
 func TestParseRangeIncludesWholeToDate(t *testing.T) {
 	rangeFilter, err := ParseRange("2026-10-30", "2026-10-30")
 	require.NoError(t, err)

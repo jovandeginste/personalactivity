@@ -28,6 +28,7 @@ type history struct {
 	Timestamp int64  `gorm:"column:timestamp"`
 	Command   string `gorm:"column:command"`
 	Cwd       string `gorm:"column:cwd"`
+	Hostname  string `gorm:"column:hostname"`
 	Exit      int    `gorm:"column:exit"`
 	Duration  int64  `gorm:"column:duration"`
 }
@@ -36,6 +37,10 @@ func (history) TableName() string { return "history" }
 
 func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 	slog.Info("collecting activity", "source", s.Name())
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, fmt.Errorf("determine current hostname: %w", err)
+	}
 	dsn := (&url.URL{Scheme: "file", Path: s.path, RawQuery: "mode=ro"}).String()
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: gormlogger.New(log.New(os.Stderr, "", log.LstdFlags), gormlogger.Config{LogLevel: gormlogger.Error}),
@@ -44,7 +49,7 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 		return nil, fmt.Errorf("open read-only history database: %w", err)
 	}
 	var rows []history
-	if err := db.WithContext(ctx).Find(&rows).Error; err != nil {
+	if err := db.WithContext(ctx).Where("hostname LIKE ?", hostname+":%").Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	events := make([]activity.Event, 0, len(rows))

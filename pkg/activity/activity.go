@@ -72,7 +72,7 @@ func Collect(ctx context.Context, sources []Source, selected []string, dateRange
 
 	var events []Event
 	for _, source := range sources {
-		if len(wanted) > 0 && !wanted[strings.ToLower(source.Name())] {
+		if len(selected) > 0 && !wanted[strings.ToLower(source.Name())] {
 			continue
 		}
 		delete(wanted, strings.ToLower(source.Name()))
