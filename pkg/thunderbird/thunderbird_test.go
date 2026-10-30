@@ -53,7 +53,7 @@ func TestCollectSentMessages(t *testing.T) {
 	event := events[0]
 	require.True(t, event.Date.Equal(time.UnixMicro(1_793_280_049_000_000)))
 	require.Equal(t, "thunderbird", event.Source)
-	require.Equal(t, "alice@example.com, bob@example.com", event.Topic)
+	require.Equal(t, "jo@example.com -> alice@example.com, bob@example.com", event.Topic)
 	require.Equal(t, "Project update: Here is the latest status.", event.Summary)
 	require.Equal(t, "jo@example.com", event.Attributes["from"])
 	require.Equal(t, "alice@example.com", event.Attributes["to"])

@@ -98,6 +98,12 @@ func (s Source) collectDB(ctx context.Context, dbPath string) ([]activity.Event,
 		if destinations == "" {
 			destinations = row.To
 		}
+		topic := destinations
+		if row.Sender != "" && destinations != "" {
+			topic = row.Sender + " -> " + destinations
+		} else if row.Sender != "" {
+			topic = row.Sender
+		}
 		subject := strings.TrimSpace(row.Subject)
 		body := cleanBody(row.Body)
 		bodyLine := strings.Join(strings.Fields(body), " ")
@@ -112,7 +118,7 @@ func (s Source) collectDB(ctx context.Context, dbPath string) ([]activity.Event,
 		events = append(events, activity.Event{
 			Date:    time.UnixMicro(row.Date),
 			Source:  s.Name(),
-			Topic:   destinations,
+			Topic:   topic,
 			Summary: summary,
 			Attributes: map[string]string{
 				"from":       row.Sender,
