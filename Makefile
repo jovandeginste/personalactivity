@@ -1,10 +1,10 @@
 .PHONY: build install test lint deps
 
 build:
-	go build ./cmd/personalactivity
+	CGO_ENABLED=0 go build ./cmd/personalactivity
 
 install:
-	go install ./cmd/personalactivity
+	CGO_ENABLED=0 go install ./cmd/personalactivity
 
 test:
 	go test ./...

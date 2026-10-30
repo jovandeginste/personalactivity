@@ -32,6 +32,8 @@ jobs:
         run: gh release view master || gh release create master --title "master" --notes "Latest build from master" --prerelease || gh release view master
 
       - uses: wangyoucao577/go-release-action@v1
+        env:
+          CGO_ENABLED: 0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
