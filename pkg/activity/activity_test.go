@@ -77,6 +77,11 @@ func TestParseRangeDefaultsToWhenOnlyFromIsSet(t *testing.T) {
 	require.False(t, rangeFilter.To.After(time.Now().Add(time.Second)))
 }
 
+func TestParseRangeErrorsWhenFromIsAfterTo(t *testing.T) {
+	_, err := ParseRange("2026-10-31", "2026-10-30")
+	require.Error(t, err)
+}
+
 func TestWriteJSONOmitsEmptyAttributes(t *testing.T) {
 	var buf bytes.Buffer
 	err := Write(&buf, []Event{{

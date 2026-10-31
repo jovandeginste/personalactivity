@@ -45,6 +45,8 @@ func (r Range) Filter(events []Event) []Event {
 
 func ParseRange(from, to string) (Range, error) {
 	now := time.Now()
+	endOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, 1)
+
 	start, err := parseDate(from, false)
 	if err != nil {
 		return Range{}, fmt.Errorf("invalid --from: %w", err)
@@ -52,14 +54,20 @@ func ParseRange(from, to string) (Range, error) {
 	if start == nil {
 		midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 		start = &midnight
+	} else if start.After(now) {
+		slog.Warn("--from is after today", "from", from)
 	}
+
 	end, err := parseDate(to, true)
 	if err != nil {
 		return Range{}, fmt.Errorf("invalid --to: %w", err)
 	}
 	if end == nil {
 		end = &now
+	} else if end.After(endOfToday) {
+		slog.Warn("--to is after today", "to", to)
 	}
+
 	if !start.Before(*end) {
 		return Range{}, fmt.Errorf("--from must be before --to")
 	}
