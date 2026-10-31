@@ -28,7 +28,7 @@ func TestCollectSkipsWhenNoTokenFound(t *testing.T) {
 	require.Empty(t, events)
 }
 
-func TestCollectFetchesAndConvertsEvents(t *testing.T) {
+func TestCollectFetchesCommitsAndEvents(t *testing.T) {
 	t.Setenv("GH_CONFIG_DIR", t.TempDir())
 	t.Setenv("GH_HOST", "github.com")
 	t.Setenv("GH_TOKEN", "test-token")
@@ -42,8 +42,13 @@ func TestCollectFetchesAndConvertsEvents(t *testing.T) {
 
 		_, _ = fmt.Fprint(w, `{"login":"jovandeginste"}`)
 	})
+	mux.HandleFunc("/api/v3/search/commits", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "author:jovandeginste", r.URL.Query().Get("q"))
+		w.Header().Set("Content-Type", "application/json")
+
+		_, _ = fmt.Fprint(w, `{"total_count":1,"items":[{"sha":"862ed661e0866d84cacab9b2756da3fae5e32038","html_url":"https://github.com/jovandeginste/personalactivity/commit/862ed66","repository":{"full_name":"jovandeginste/personalactivity"},"commit":{"message":"feat(github): add provider\n\nDetails here","author":{"date":"2026-10-31T09:59:00Z"}}}]}`)
+	})
 	mux.HandleFunc("/api/v3/users/jovandeginste/events", func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
 		w.Header().Set("Content-Type", "application/json")
 
 		_, _ = fmt.Fprint(w, `[
@@ -61,9 +66,9 @@ func TestCollectFetchesAndConvertsEvents(t *testing.T) {
 
 	require.Equal(t, "github", events[0].Source)
 	require.Equal(t, "jovandeginste/personalactivity", events[0].Topic)
-	require.Equal(t, "pushed 862ed66 to refs/heads/main", events[0].Summary)
-	require.Equal(t, "PushEvent", events[0].Attributes["type"])
-	require.Equal(t, "refs/heads/main", events[0].Attributes["ref"])
+	require.Equal(t, "feat(github): add provider", events[0].Summary)
+	require.Equal(t, "commit", events[0].Attributes["type"])
+	require.Equal(t, "862ed661e0866d84cacab9b2756da3fae5e32038", events[0].Attributes["sha"])
 
 	require.Equal(t, "github", events[1].Source)
 	require.Equal(t, "jovandeginste/workout-tracker", events[1].Topic)

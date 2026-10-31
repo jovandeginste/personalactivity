@@ -9,7 +9,7 @@ When summarizing a workday or checking what you worked on during a specific peri
 ### Supported Sources
 
 - **`gitea`**: Activity feed and commits for the current OS user from the Gitea API server configured in `GITEA_API`, authenticated via `httpsig` using the SSH certificate in `ssh-agent`.
-- **`github`**: User activity feed from the GitHub REST API via `github.com/google/go-github`, authenticated using `gh` CLI authentication logic (`github.com/cli/go-gh`).
+- **`github`**: User activity feed and authored commits from the GitHub REST API via `github.com/google/go-github`, authenticated using `gh` CLI authentication logic (`github.com/cli/go-gh`).
 - **`atuin`**: Local shell command history read in read-only mode from `~/.local/share/atuin/history.db`.
 - **`vimundo`**: Neovim/Vim undo history files parsed from `~/.local/state/nvf/undo`.
 - **`opencode`**: User prompts and session metadata read in read-only mode from `~/.local/share/opencode/opencode.db`.
