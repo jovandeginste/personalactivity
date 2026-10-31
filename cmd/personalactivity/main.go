@@ -11,6 +11,7 @@ import (
 	"github.com/jovandeginste/personalactivity/pkg/atuin"
 	"github.com/jovandeginste/personalactivity/pkg/firefox"
 	"github.com/jovandeginste/personalactivity/pkg/gitea"
+	"github.com/jovandeginste/personalactivity/pkg/github"
 	"github.com/jovandeginste/personalactivity/pkg/opencode"
 	"github.com/jovandeginste/personalactivity/pkg/thunderbird"
 	"github.com/jovandeginste/personalactivity/pkg/vimundo"
@@ -36,6 +37,7 @@ func main() {
 
 			sources := []activity.Source{
 				gitea.New(currentUser.Username),
+				github.New(),
 				atuin.New(defaultAtuinPath(currentUser.HomeDir)),
 				vimundo.New(defaultVimUndoPath(currentUser.HomeDir)),
 				opencode.New(defaultOpenCodePath(currentUser.HomeDir)),
@@ -52,7 +54,7 @@ func main() {
 
 	cmd.Flags().StringVar(&from, "from", "", "start date (YYYY-MM-DD or RFC3339)")
 	cmd.Flags().StringVar(&to, "to", "", "end date (YYYY-MM-DD or RFC3339)")
-	cmd.Flags().StringSliceVarP(&sourceNames, "source", "s", nil, "source to collect (gitea, atuin, vimundo, opencode, thunderbird, or firefox; repeatable)")
+	cmd.Flags().StringSliceVarP(&sourceNames, "source", "s", nil, "source to collect (gitea, github, atuin, vimundo, opencode, thunderbird, or firefox; repeatable)")
 	cmd.Flags().StringVarP(&format, "format", "o", "table", "output format: table or json")
 	cmd.InitDefaultCompletionCmd()
 

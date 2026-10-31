@@ -9,6 +9,7 @@ When summarizing a workday or checking what you worked on during a specific peri
 ### Supported Sources
 
 - **`gitea`**: Activity feed and commits for the current OS user from the Gitea API server configured in `GITEA_API`, authenticated via `httpsig` using the SSH certificate in `ssh-agent`.
+- **`github`**: User activity feed from the GitHub REST API via `github.com/google/go-github`, authenticated using `gh` CLI authentication logic (`github.com/cli/go-gh`).
 - **`atuin`**: Local shell command history read in read-only mode from `~/.local/share/atuin/history.db`.
 - **`vimundo`**: Neovim/Vim undo history files parsed from `~/.local/state/nvf/undo`.
 - **`opencode`**: User prompts and session metadata read in read-only mode from `~/.local/share/opencode/opencode.db`.
@@ -21,6 +22,7 @@ The project is written in Go and structured into reusable packages under `./pkg/
 
 - `pkg/activity`: Shared `Event` model, `Source` interface, date range parsing, filtering, sorting, and `table`/`json` output formatting.
 - `pkg/gitea`: Queries the Gitea user activity feed authenticated with `github.com/42wim/httpsig` and `golang.org/x/crypto/ssh/agent`.
+- `pkg/github`: Queries the GitHub user activity feed using `github.com/google/go-github` and `github.com/cli/go-gh/v2/pkg/auth`.
 - `pkg/atuin`: Queries the local SQLite database via `gorm` and `glebarez/sqlite` (pure Go SQLite).
 - `pkg/vimundo`: Binary parser for Vim's `VimˆUnDo` undo file format.
 - `pkg/opencode`: Queries user session messages from the local OpenCode SQLite database.
@@ -59,7 +61,7 @@ personalactivity [flags]
 
 - `--from string`: Start date (`YYYY-MM-DD` or `RFC3339`).
 - `--to string`: End date (`YYYY-MM-DD` or `RFC3339`). When given as `YYYY-MM-DD`, the entire end day is included.
-- `-s, --source strings`: Source(s) to collect (`gitea`, `atuin`, `vimundo`, `opencode`, `thunderbird`, `firefox`). Can be repeated or comma-separated. Defaults to all sources.
+- `-s, --source strings`: Source(s) to collect (`gitea`, `github`, `atuin`, `vimundo`, `opencode`, `thunderbird`, `firefox`). Can be repeated or comma-separated. Defaults to all sources.
 - `-o, --format string`: Output format: `table` or `json` (default `table`).
 
 ### Examples
