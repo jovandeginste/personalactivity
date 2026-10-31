@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -66,4 +67,23 @@ func TestParseRangeDefaultsToToday(t *testing.T) {
 	require.Equal(t, 0, rangeFilter.From.Second())
 	require.False(t, rangeFilter.To.Before(*rangeFilter.From))
 	require.False(t, rangeFilter.To.After(time.Now().Add(time.Second)))
+}
+
+func TestWriteJSONOmitsEmptyAttributes(t *testing.T) {
+	var buf bytes.Buffer
+	err := Write(&buf, []Event{{
+		Date:    time.Date(2026, 10, 31, 9, 0, 0, 0, time.UTC),
+		Source:  "firefox",
+		Topic:   "example.com",
+		Summary: "https://example.com",
+		Attributes: map[string]string{
+			"url":         "https://example.com",
+			"title":       "",
+			"description": "   ",
+		},
+	}}, "json")
+	require.NoError(t, err)
+	require.Contains(t, buf.String(), `"url":"https://example.com"`)
+	require.NotContains(t, buf.String(), `"title"`)
+	require.NotContains(t, buf.String(), `"description"`)
 }

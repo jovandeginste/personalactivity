@@ -84,7 +84,12 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 		description := strings.TrimSpace(row.Description)
 		if idx := findRecentEvent(events, rawURL, title, date); idx >= 0 {
 			match := events[idx]
-			count, _ := strconv.Atoi(match.Attributes["count"])
+			count := 1
+			if prev, err := strconv.Atoi(match.Attributes["count"]); err == nil {
+				count = prev
+			} else {
+				match.Attributes["first_visit"] = match.Date.Format(time.RFC3339)
+			}
 			match.Date = date
 			match.Summary = formatSummary(title, rawURL)
 			match.Attributes["url"] = rawURL
@@ -93,6 +98,7 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 				match.Attributes["description"] = description
 			}
 			match.Attributes["count"] = strconv.Itoa(count + 1)
+			match.Attributes["last_visit"] = date.Format(time.RFC3339)
 			copy(events[idx:], events[idx+1:])
 			events[len(events)-1] = match
 			continue
@@ -107,7 +113,6 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 				"title":       title,
 				"description": description,
 				"visit_type":  visitTypeName(row.VisitType),
-				"count":       "1",
 			},
 		})
 	}

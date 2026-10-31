@@ -4,12 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
+	"strings"
 	"text/tabwriter"
 )
 
 func Write(w io.Writer, events []Event, format string) error {
 	switch format {
 	case "json":
+		for i := range events {
+			maps.DeleteFunc(events[i].Attributes, func(_, v string) bool { return strings.TrimSpace(v) == "" })
+		}
 		return json.NewEncoder(w).Encode(events)
 	case "table":
 		table := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)

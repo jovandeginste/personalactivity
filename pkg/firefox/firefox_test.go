@@ -78,9 +78,13 @@ Default=1
 	require.Equal(t, "example.com", events[0].Topic)
 	require.Equal(t, "https://example.com/raw?q=keep", events[0].Summary)
 	require.Equal(t, "redirect_temporary", events[0].Attributes["visit_type"])
-	require.Equal(t, "1", events[0].Attributes["count"])
+	require.Empty(t, events[0].Attributes["count"])
+	require.Empty(t, events[0].Attributes["first_visit"])
+	require.Empty(t, events[0].Attributes["last_visit"])
 
-	require.True(t, events[1].Date.Equal(time.UnixMicro(1_793_384_829_750_740)))
+	firstVisit := time.UnixMicro(1_793_384_819_750_740)
+	lastVisit := time.UnixMicro(1_793_384_829_750_740)
+	require.True(t, events[1].Date.Equal(lastVisit))
 	require.Equal(t, "firefox", events[1].Source)
 	require.Equal(t, "github.com", events[1].Topic)
 	require.Equal(t, "personalactivity (https://github.com/jovandeginste/personalactivity#readme)", events[1].Summary)
@@ -89,4 +93,6 @@ Default=1
 	require.Equal(t, "Activity CLI", events[1].Attributes["description"])
 	require.Equal(t, "link", events[1].Attributes["visit_type"])
 	require.Equal(t, "2", events[1].Attributes["count"])
+	require.Equal(t, firstVisit.Format(time.RFC3339), events[1].Attributes["first_visit"])
+	require.Equal(t, lastVisit.Format(time.RFC3339), events[1].Attributes["last_visit"])
 }
