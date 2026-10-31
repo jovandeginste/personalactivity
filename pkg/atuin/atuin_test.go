@@ -46,4 +46,5 @@ func TestCollectFiltersByCurrentHostname(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, events, 1)
 	require.Equal(t, "included", events[0].Summary)
+	require.Equal(t, hostname, events[0].Attributes["host"])
 }

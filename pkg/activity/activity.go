@@ -4,8 +4,10 @@ package activity
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -70,21 +72,13 @@ func Collect(ctx context.Context, sources []Source, selected []string, dateRange
 		wanted[strings.ToLower(name)] = true
 	}
 
-	var events []Event
+	var active []Source
 	for _, source := range sources {
 		if len(selected) > 0 && !wanted[strings.ToLower(source.Name())] {
 			continue
 		}
 		delete(wanted, strings.ToLower(source.Name()))
-		collected, err := source.Collect(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("collect %s activity: %w", source.Name(), err)
-		}
-		for _, event := range collected {
-			if (dateRange.From == nil || !event.Date.Before(*dateRange.From)) && (dateRange.To == nil || event.Date.Before(*dateRange.To)) {
-				events = append(events, event)
-			}
-		}
+		active = append(active, source)
 	}
 	if len(wanted) > 0 {
 		unknown := make([]string, 0, len(wanted))
@@ -93,6 +87,29 @@ func Collect(ctx context.Context, sources []Source, selected []string, dateRange
 		}
 		sort.Strings(unknown)
 		return nil, fmt.Errorf("unknown source: %s", strings.Join(unknown, ", "))
+	}
+
+	results := make([][]Event, len(active))
+	var wg sync.WaitGroup
+	for i, source := range active {
+		wg.Go(func() {
+			collected, err := source.Collect(ctx)
+			if err != nil {
+				slog.Warn("skipping source", "source", source.Name(), "error", err)
+				return
+			}
+			results[i] = collected
+		})
+	}
+	wg.Wait()
+
+	var events []Event
+	for _, collected := range results {
+		for _, event := range collected {
+			if (dateRange.From == nil || !event.Date.Before(*dateRange.From)) && (dateRange.To == nil || event.Date.Before(*dateRange.To)) {
+				events = append(events, event)
+			}
+		}
 	}
 	sort.Slice(events, func(i, j int) bool { return events[i].Date.Before(events[j].Date) })
 	return events, nil

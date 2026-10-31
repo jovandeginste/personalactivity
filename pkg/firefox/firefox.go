@@ -32,11 +32,12 @@ type visit struct {
 }
 
 func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
-	slog.Info("collecting activity", "source", s.Name())
 	dbPath, err := placesPath(s.path)
 	if err != nil {
-		return nil, err
+		slog.Warn("skipping source", "source", s.Name(), "error", err)
+		return []activity.Event{}, nil
 	}
+	slog.Info("collecting activity", "source", s.Name())
 
 	dsn := (&url.URL{Scheme: "file", Path: dbPath, RawQuery: "mode=ro&immutable=1"}).String()
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
@@ -111,7 +112,11 @@ func placesPath(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(profileDir, "places.sqlite"), nil
+	dbPath := filepath.Join(profileDir, "places.sqlite")
+	if _, err := os.Stat(dbPath); err != nil {
+		return "", err
+	}
+	return dbPath, nil
 }
 
 type profileEntry struct {

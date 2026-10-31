@@ -39,6 +39,10 @@ type messageData struct {
 }
 
 func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
+	if _, err := os.Stat(s.path); err != nil {
+		slog.Warn("skipping source", "source", s.Name(), "error", err)
+		return []activity.Event{}, nil
+	}
 	slog.Info("collecting activity", "source", s.Name())
 	dsn := (&url.URL{Scheme: "file", Path: s.path, RawQuery: "mode=ro"}).String()
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{

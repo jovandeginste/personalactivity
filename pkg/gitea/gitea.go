@@ -51,11 +51,12 @@ type commit struct {
 }
 
 func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
-	slog.Info("collecting activity", "source", s.Name())
 	apiURL := strings.TrimRight(os.Getenv("GITEA_API"), "/")
 	if apiURL == "" {
-		return nil, fmt.Errorf("GITEA_API is not set")
+		slog.Warn("skipping source; GITEA_API is not set", "source", s.Name())
+		return []activity.Event{}, nil
 	}
+	slog.Info("collecting activity", "source", s.Name())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL+"/users/"+url.PathEscape(s.user)+"/activities/feeds", nil)
 	if err != nil {
 		return nil, err

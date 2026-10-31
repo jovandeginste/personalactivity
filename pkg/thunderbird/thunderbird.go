@@ -55,11 +55,12 @@ type calendarEvent struct {
 }
 
 func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
-	slog.Info("collecting activity", "source", s.Name())
 	messagePaths, calendarPaths, err := databasePaths(s.path)
 	if err != nil {
-		return nil, err
+		slog.Warn("skipping source", "source", s.Name(), "error", err)
+		return []activity.Event{}, nil
 	}
+	slog.Info("collecting activity", "source", s.Name())
 
 	var events []activity.Event
 	for _, dbPath := range messagePaths {

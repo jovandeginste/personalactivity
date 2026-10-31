@@ -11,10 +11,11 @@ import (
 type testSource struct {
 	name   string
 	events []Event
+	err    error
 }
 
 func (s testSource) Name() string                             { return s.name }
-func (s testSource) Collect(context.Context) ([]Event, error) { return s.events, nil }
+func (s testSource) Collect(context.Context) ([]Event, error) { return s.events, s.err }
 
 func TestCollectFiltersAndSorts(t *testing.T) {
 	base := time.Date(2026, 10, 30, 0, 0, 0, 0, time.UTC)
@@ -45,6 +46,16 @@ func TestParseRangeIncludesWholeToDate(t *testing.T) {
 func TestCollectRejectsUnknownSource(t *testing.T) {
 	_, err := Collect(context.Background(), []Source{testSource{name: "known"}}, []string{"unknown"}, Range{})
 	require.Error(t, err)
+}
+
+func TestCollectSkipsFailingSource(t *testing.T) {
+	events, err := Collect(context.Background(), []Source{
+		testSource{name: "failing", err: context.DeadlineExceeded},
+		testSource{name: "working", events: []Event{{Summary: "ok"}}},
+	}, nil, Range{})
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+	require.Equal(t, "ok", events[0].Summary)
 }
 
 func TestParseRangeDefaultsToToday(t *testing.T) {

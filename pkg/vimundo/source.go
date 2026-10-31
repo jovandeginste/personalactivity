@@ -19,11 +19,12 @@ func New(directory string) Source { return Source{directory: directory} }
 func (Source) Name() string       { return "vimundo" }
 
 func (s Source) Collect(_ context.Context) ([]activity.Event, error) {
-	slog.Info("collecting activity", "source", s.Name())
 	entries, err := os.ReadDir(s.directory)
 	if err != nil {
-		return nil, err
+		slog.Warn("skipping source", "source", s.Name(), "error", err)
+		return []activity.Event{}, nil
 	}
+	slog.Info("collecting activity", "source", s.Name())
 	var events []activity.Event
 	for _, entry := range entries {
 		if entry.IsDir() {

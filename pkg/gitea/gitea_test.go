@@ -7,11 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCollectRequiresGiteaAPIEnv(t *testing.T) {
+func TestCollectSkipsWhenGiteaAPIEnvNotSet(t *testing.T) {
 	t.Setenv("GITEA_API", "")
 
-	_, err := New("user").Collect(context.Background())
-	require.EqualError(t, err, "GITEA_API is not set")
+	events, err := New("user").Collect(context.Background())
+	require.NoError(t, err)
+	require.Empty(t, events)
 }
 
 func TestCommitEventsCreatesAnEventForEachCommit(t *testing.T) {
