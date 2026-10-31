@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/cli/go-gh/v2/pkg/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,19 +22,30 @@ func TestCollectSkipsWhenNoTokenFound(t *testing.T) {
 	t.Setenv("GH_PATH", "/nonexistent")
 	t.Setenv("PATH", t.TempDir())
 
-	_ = config.Reload(nil)
-
 	events, err := New().Collect(context.Background())
 	require.NoError(t, err)
 	require.Empty(t, events)
+}
+
+func TestResolveAuthReadsHostsYML(t *testing.T) {
+	cfgDir := t.TempDir()
+	t.Setenv("GH_CONFIG_DIR", cfgDir)
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GH_HOST", "")
+
+	hostsYML := "github.com:\n    user: jovandeginste\n    users:\n        jovandeginste:\n            oauth_token: cfg-token\n"
+	require.NoError(t, os.WriteFile(filepath.Join(cfgDir, "hosts.yml"), []byte(hostsYML), 0o600))
+
+	host, token := resolveAuth(context.Background())
+	require.Equal(t, "github.com", host)
+	require.Equal(t, "cfg-token", token)
 }
 
 func TestCollectFetchesCommitsAndEvents(t *testing.T) {
 	t.Setenv("GH_CONFIG_DIR", t.TempDir())
 	t.Setenv("GH_HOST", "github.com")
 	t.Setenv("GH_TOKEN", "test-token")
-
-	_ = config.Reload(nil)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {

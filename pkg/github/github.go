@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cli/go-gh/v2/pkg/auth"
 	gogithub "github.com/google/go-github/v93/github"
 	"github.com/jovandeginste/personalactivity/pkg/activity"
 )
@@ -35,8 +34,7 @@ func New() Source           { return Source{baseURL: ""} }
 func (Source) Name() string { return sourceName }
 
 func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
-	host, _ := auth.DefaultHost()
-	token, _ := auth.TokenForHost(host)
+	host, token := resolveAuth(ctx)
 
 	if token == "" {
 		slog.Warn("skipping source; no GitHub auth token found", "source", s.Name())
@@ -79,7 +77,7 @@ func (s Source) newClient(host, token string) (*gogithub.Client, error) {
 	opts := []gogithub.ClientOptionsFunc{gogithub.WithAuthToken(token)}
 	if s.baseURL != "" {
 		opts = append(opts, gogithub.WithEnterpriseURLs(s.baseURL, s.baseURL))
-	} else if auth.IsEnterprise(host) {
+	} else if isEnterprise(host) {
 		baseURL := fmt.Sprintf("https://%s/api/v3/", host)
 		opts = append(opts, gogithub.WithEnterpriseURLs(baseURL, baseURL))
 	}

@@ -112,5 +112,6 @@ func Collect(ctx context.Context, sources []Source, selected []string, dateRange
 		}
 	}
 	sort.Slice(events, func(i, j int) bool { return events[i].Date.Before(events[j].Date) })
+	slog.Info("all collectors finished; printing summary", "sources", len(active), "events", len(events))
 	return events, nil
 }
