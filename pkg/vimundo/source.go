@@ -7,11 +7,15 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jovandeginste/personalactivity/pkg/activity"
 )
+
+const compactWindow = time.Minute
 
 type Source struct{ directory string }
 
@@ -34,15 +38,15 @@ func (s Source) Collect(_ context.Context) ([]activity.Event, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parse %s: %w", entry.Name(), err)
 		}
-		for _, header := range undo.Headers {
+		for _, item := range compactHeaders(undo.Headers) {
 			events = append(events, activity.Event{
-				Date:    header.Time,
+				Date:    item.header.Time,
 				Source:  s.Name(),
 				Topic:   homePath(originalPath(entry.Name())),
-				Summary: summary(header),
+				Summary: formatSummary(item.lines),
 				Attributes: map[string]string{
-					"sequence": strconv.FormatUint(uint64(header.Sequence), 10),
-					"entries":  strconv.Itoa(len(header.Entries)),
+					"sequence": strconv.FormatUint(uint64(item.header.Sequence), 10),
+					"entries":  strconv.Itoa(item.entries),
 				},
 			})
 		}
@@ -70,16 +74,80 @@ func homePath(path string) string {
 	return path
 }
 
-func summary(header Header) string {
-	var lines []string
-	for _, entry := range header.Entries {
-		lines = append(lines, entry.Lines...)
+type compactedHeader struct {
+	header  Header
+	line    uint32
+	entries int
+	lines   []string
+}
+
+func compactHeaders(headers []Header) []compactedHeader {
+	sorted := append([]Header(nil), headers...)
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].Time.Equal(sorted[j].Time) {
+			return sorted[i].Sequence < sorted[j].Sequence
+		}
+		return sorted[i].Time.Before(sorted[j].Time)
+	})
+
+	var compacted []compactedHeader
+	for _, h := range sorted {
+		line := headerLine(h)
+		lines := headerLines(h)
+		if len(compacted) > 0 {
+			last := &compacted[len(compacted)-1]
+			if last.line == line && h.Time.Sub(last.header.Time) <= compactWindow {
+				if len(lines) > 0 {
+					if isLineDelete(h) && h.Time.Equal(last.header.Time) {
+						last.lines = append(last.lines, lines...)
+					} else {
+						last.lines = lines
+					}
+				}
+				last.header = h
+				last.entries += len(h.Entries)
+				continue
+			}
+		}
+		compacted = append(compacted, compactedHeader{
+			header:  h,
+			line:    line,
+			entries: len(h.Entries),
+			lines:   lines,
+		})
 	}
+	return compacted
+}
+
+func headerLine(h Header) uint32 {
+	if len(h.Entries) > 0 {
+		return h.Entries[0].Top
+	}
+	return h.Cursor.Line
+}
+
+func isLineDelete(h Header) bool {
+	return len(h.Entries) == 1 && h.Entries[0].Bottom == h.Entries[0].Top+1
+}
+
+func headerLines(h Header) []string {
+	var lines []string
+	for _, entry := range h.Entries {
+		for _, line := range entry.Lines {
+			if trimmed := strings.TrimSpace(line); trimmed != "" {
+				lines = append(lines, trimmed)
+			}
+		}
+	}
+	return lines
+}
+
+func formatSummary(lines []string) string {
 	text := strings.TrimSpace(strings.Join(lines, " "))
 	if text == "" {
 		return "Changed no lines"
 	}
-	const limit = 200
+	const limit = 1000
 	if len(text) > limit {
 		return text[:limit-1] + "…"
 	}
