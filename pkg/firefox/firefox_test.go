@@ -45,35 +45,48 @@ Default=1
 			id INTEGER PRIMARY KEY,
 			url LONGVARCHAR,
 			title LONGVARCHAR,
-			description TEXT
+			description TEXT,
+			hidden INTEGER DEFAULT 0
 		);
 		CREATE TABLE moz_historyvisits (
 			id INTEGER PRIMARY KEY,
+			from_visit INTEGER DEFAULT 0,
 			place_id INTEGER,
-			visit_date INTEGER
+			visit_date INTEGER,
+			visit_type INTEGER DEFAULT 1
 		);
 
 		INSERT INTO moz_places VALUES
-			(1, 'https://github.com/jovandeginste/personalactivity', '  personalactivity  ', '  Activity CLI  '),
-			(2, 'https://example.com/raw', NULL, NULL);
+			(1, 'https://github.com/jovandeginste/personalactivity', '  personalactivity  ', '  Activity CLI  ', 0),
+			(2, 'https://example.com/raw', NULL, NULL, 0),
+			(3, 'https://github.com/jovandeginste/personalactivity#readme', '  personalactivity  ', '', 0),
+			(4, 'https://example.com/hidden-redirect', 'Hidden', '', 1),
+			(5, 'https://example.com/redirect-source', 'Redirect Source', '', 0);
 
 		INSERT INTO moz_historyvisits VALUES
-			(10, 1, 1793384819750740),
-			(11, 2, 1793385000000000);
+			(10, 0, 1, 1793384819750740, 1),
+			(11, 0, 5, 1793384824000000, 1),
+			(12, 11, 2, 1793384825000000, 6),
+			(13, 0, 4, 1793384826000000, 1),
+			(14, 10, 3, 1793384829750740, 1);
 	`).Error)
 
 	events, err := New(firefoxDir).Collect(context.Background())
 	require.NoError(t, err)
 	require.Len(t, events, 2)
 
-	require.True(t, events[0].Date.Equal(time.UnixMicro(1_793_384_819_750_740)))
-	require.Equal(t, "firefox", events[0].Source)
-	require.Equal(t, "github.com", events[0].Topic)
-	require.Equal(t, "personalactivity (https://github.com/jovandeginste/personalactivity)", events[0].Summary)
-	require.Equal(t, "https://github.com/jovandeginste/personalactivity", events[0].Attributes["url"])
-	require.Equal(t, "personalactivity", events[0].Attributes["title"])
-	require.Equal(t, "Activity CLI", events[0].Attributes["description"])
+	require.Equal(t, "example.com", events[0].Topic)
+	require.Equal(t, "https://example.com/raw", events[0].Summary)
+	require.Equal(t, "redirect_temporary", events[0].Attributes["visit_type"])
+	require.Equal(t, "1", events[0].Attributes["count"])
 
-	require.Equal(t, "example.com", events[1].Topic)
-	require.Equal(t, "https://example.com/raw", events[1].Summary)
+	require.True(t, events[1].Date.Equal(time.UnixMicro(1_793_384_829_750_740)))
+	require.Equal(t, "firefox", events[1].Source)
+	require.Equal(t, "github.com", events[1].Topic)
+	require.Equal(t, "personalactivity (https://github.com/jovandeginste/personalactivity#readme)", events[1].Summary)
+	require.Equal(t, "https://github.com/jovandeginste/personalactivity#readme", events[1].Attributes["url"])
+	require.Equal(t, "personalactivity", events[1].Attributes["title"])
+	require.Equal(t, "Activity CLI", events[1].Attributes["description"])
+	require.Equal(t, "link", events[1].Attributes["visit_type"])
+	require.Equal(t, "2", events[1].Attributes["count"])
 }

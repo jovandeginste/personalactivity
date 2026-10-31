@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +20,8 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 )
 
+const compactWindow = time.Minute
+
 type Source struct{ path string }
 
 func New(path string) Source { return Source{path: path} }
@@ -26,6 +29,7 @@ func (Source) Name() string  { return "firefox" }
 
 type visit struct {
 	VisitDate   int64  `gorm:"column:visit_date"`
+	VisitType   int    `gorm:"column:visit_type"`
 	URL         string `gorm:"column:url"`
 	Title       string `gorm:"column:title"`
 	Description string `gorm:"column:description"`
@@ -55,37 +59,103 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 	if err := db.WithContext(ctx).Raw(`
 		SELECT
 			v.visit_date,
+			COALESCE(v.visit_type, 0) AS visit_type,
 			p.url,
 			COALESCE(p.title, '') AS title,
 			COALESCE(p.description, '') AS description
 		FROM moz_historyvisits AS v
 		JOIN moz_places AS p ON p.id = v.place_id
 		WHERE v.visit_date IS NOT NULL
+		  AND COALESCE(p.hidden, 0) = 0
+		  AND NOT EXISTS (
+			SELECT 1 FROM moz_historyvisits AS r
+			WHERE r.from_visit = v.id AND r.visit_type IN (5, 6)
+		  )
+		ORDER BY v.visit_date ASC
 	`).Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 
 	events := make([]activity.Event, 0, len(rows))
 	for _, row := range rows {
+		date := time.UnixMicro(row.VisitDate)
 		title := strings.TrimSpace(row.Title)
-		summary := row.URL
-		if title != "" {
-			summary = title + " (" + row.URL + ")"
+		description := strings.TrimSpace(row.Description)
+		if idx := findRecentEvent(events, row.URL, title, date); idx >= 0 {
+			match := events[idx]
+			count, _ := strconv.Atoi(match.Attributes["count"])
+			match.Date = date
+			match.Summary = formatSummary(title, row.URL)
+			match.Attributes["url"] = row.URL
+			match.Attributes["visit_type"] = visitTypeName(row.VisitType)
+			if description != "" {
+				match.Attributes["description"] = description
+			}
+			match.Attributes["count"] = strconv.Itoa(count + 1)
+			copy(events[idx:], events[idx+1:])
+			events[len(events)-1] = match
+			continue
 		}
 		events = append(events, activity.Event{
-			Date:    time.UnixMicro(row.VisitDate),
+			Date:    date,
 			Source:  s.Name(),
 			Topic:   hostTopic(row.URL),
-			Summary: summary,
+			Summary: formatSummary(title, row.URL),
 			Attributes: map[string]string{
 				"url":         row.URL,
 				"title":       title,
-				"description": strings.TrimSpace(row.Description),
+				"description": description,
+				"visit_type":  visitTypeName(row.VisitType),
+				"count":       "1",
 			},
 		})
 	}
 	slog.Info("collected activity", "source", s.Name(), "events", len(events))
 	return events, nil
+}
+
+func visitTypeName(visitType int) string {
+	switch visitType {
+	case 1:
+		return "link"
+	case 2:
+		return "typed"
+	case 3:
+		return "bookmark"
+	case 4:
+		return "embed"
+	case 5:
+		return "redirect_permanent"
+	case 6:
+		return "redirect_temporary"
+	case 7:
+		return "download"
+	case 8:
+		return "framed_link"
+	case 9:
+		return "reload"
+	default:
+		return strconv.Itoa(visitType)
+	}
+}
+
+func formatSummary(title, rawURL string) string {
+	if title != "" {
+		return title + " (" + rawURL + ")"
+	}
+	return rawURL
+}
+
+func findRecentEvent(events []activity.Event, rawURL, title string, date time.Time) int {
+	for i := len(events) - 1; i >= 0; i-- {
+		if date.Sub(events[i].Date) > compactWindow {
+			break
+		}
+		if events[i].Attributes["title"] == title && strings.HasPrefix(rawURL, events[i].Attributes["url"]) {
+			return i
+		}
+	}
+	return -1
 }
 
 func hostTopic(rawURL string) string {
