@@ -25,17 +25,18 @@ jobs:
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") >> ${GITHUB_ENV}
 
-      - name: Ensure master release exists
+      - name: Ensure latest release exists
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release view master || gh release create master --title "master" --notes "Latest build from master" --prerelease || gh release view master
+        run: gh release view latest || gh release create latest --title "latest" --notes "Latest build from master" --prerelease || gh release view latest
 
       - uses: wangyoucao577/go-release-action@v1
         env:
           CGO_ENABLED: 0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_tag: ${{ github.event_name == 'push' && 'latest' || '' }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           overwrite: true
