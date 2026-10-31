@@ -20,7 +20,7 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 )
 
-const compactWindow = time.Minute
+const compactWindow = 10 * time.Minute
 
 type Source struct{ path string }
 
@@ -79,14 +79,15 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 	events := make([]activity.Event, 0, len(rows))
 	for _, row := range rows {
 		date := time.UnixMicro(row.VisitDate)
+		rawURL := cleanURL(row.URL)
 		title := strings.TrimSpace(row.Title)
 		description := strings.TrimSpace(row.Description)
-		if idx := findRecentEvent(events, row.URL, title, date); idx >= 0 {
+		if idx := findRecentEvent(events, rawURL, title, date); idx >= 0 {
 			match := events[idx]
 			count, _ := strconv.Atoi(match.Attributes["count"])
 			match.Date = date
-			match.Summary = formatSummary(title, row.URL)
-			match.Attributes["url"] = row.URL
+			match.Summary = formatSummary(title, rawURL)
+			match.Attributes["url"] = rawURL
 			match.Attributes["visit_type"] = visitTypeName(row.VisitType)
 			if description != "" {
 				match.Attributes["description"] = description
@@ -99,10 +100,10 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 		events = append(events, activity.Event{
 			Date:    date,
 			Source:  s.Name(),
-			Topic:   hostTopic(row.URL),
-			Summary: formatSummary(title, row.URL),
+			Topic:   hostTopic(rawURL),
+			Summary: formatSummary(title, rawURL),
 			Attributes: map[string]string{
-				"url":         row.URL,
+				"url":         rawURL,
 				"title":       title,
 				"description": description,
 				"visit_type":  visitTypeName(row.VisitType),
@@ -164,6 +165,66 @@ func hostTopic(rawURL string) string {
 		return rawURL
 	}
 	return parsed.Host
+}
+
+var ignoredQueryParams = map[string]bool{
+	"_ga":                      true,
+	"_gl":                      true,
+	"aqs":                      true,
+	"bih":                      true,
+	"biw":                      true,
+	"channel":                  true,
+	"cid":                      true,
+	"client":                   true,
+	"dclid":                    true,
+	"ei":                       true,
+	"fbclid":                   true,
+	"gbraid":                   true,
+	"gclid":                    true,
+	"gi":                       true,
+	"gs_lcrp":                  true,
+	"gs_lp":                    true,
+	"hs":                       true,
+	"iflsig":                   true,
+	"igshid":                   true,
+	"mc_cid":                   true,
+	"mc_eid":                   true,
+	"msclkid":                  true,
+	"notification_referrer_id": true,
+	"oq":                       true,
+	"ref":                      true,
+	"ref_src":                  true,
+	"ref_url":                  true,
+	"referrer":                 true,
+	"sca_esv":                  true,
+	"sclient":                  true,
+	"sourceid":                 true,
+	"sxsrf":                    true,
+	"twclid":                   true,
+	"uact":                     true,
+	"ved":                      true,
+	"wbraid":                   true,
+}
+
+func cleanURL(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.RawQuery == "" {
+		return rawURL
+	}
+	var kept []string
+	for part := range strings.SplitSeq(parsed.RawQuery, "&") {
+		if part == "" {
+			continue
+		}
+		key, _, _ := strings.Cut(part, "=")
+		key = strings.ToLower(key)
+		if ignoredQueryParams[key] || strings.HasPrefix(key, "utm_") || strings.HasPrefix(key, "__cf_chl_") {
+			continue
+		}
+		kept = append(kept, part)
+	}
+	parsed.RawQuery = strings.Join(kept, "&")
+	return parsed.String()
 }
 
 func placesPath(path string) (string, error) {

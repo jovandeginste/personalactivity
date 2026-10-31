@@ -57,8 +57,8 @@ Default=1
 		);
 
 		INSERT INTO moz_places VALUES
-			(1, 'https://github.com/jovandeginste/personalactivity', '  personalactivity  ', '  Activity CLI  ', 0),
-			(2, 'https://example.com/raw', NULL, NULL, 0),
+			(1, 'https://github.com/jovandeginste/personalactivity?client=firefox-b-d&hs=abc&utm_source=test', '  personalactivity  ', '  Activity CLI  ', 0),
+			(2, 'https://example.com/raw?q=keep&sxsrf=drop', NULL, NULL, 0),
 			(3, 'https://github.com/jovandeginste/personalactivity#readme', '  personalactivity  ', '', 0),
 			(4, 'https://example.com/hidden-redirect', 'Hidden', '', 1),
 			(5, 'https://example.com/redirect-source', 'Redirect Source', '', 0);
@@ -76,7 +76,7 @@ Default=1
 	require.Len(t, events, 2)
 
 	require.Equal(t, "example.com", events[0].Topic)
-	require.Equal(t, "https://example.com/raw", events[0].Summary)
+	require.Equal(t, "https://example.com/raw?q=keep", events[0].Summary)
 	require.Equal(t, "redirect_temporary", events[0].Attributes["visit_type"])
 	require.Equal(t, "1", events[0].Attributes["count"])
 
