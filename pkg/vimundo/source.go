@@ -22,13 +22,14 @@ type Source struct{ directory string }
 func New(directory string) Source { return Source{directory: directory} }
 func (Source) Name() string       { return "vimundo" }
 
-func (s Source) Collect(_ context.Context) ([]activity.Event, error) {
+func (s Source) Collect(_ context.Context, dateRange activity.Range) ([]activity.Event, error) {
 	entries, err := os.ReadDir(s.directory)
 	if err != nil {
 		slog.Warn("skipping source", "source", s.Name(), "error", err)
 		return []activity.Event{}, nil
 	}
 	slog.Info("collecting activity", "source", s.Name())
+	var total int
 	var events []activity.Event
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -38,7 +39,12 @@ func (s Source) Collect(_ context.Context) ([]activity.Event, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parse %s: %w", entry.Name(), err)
 		}
-		for _, item := range compactHeaders(undo.Headers) {
+		compacted := compactHeaders(undo.Headers)
+		total += len(compacted)
+		for _, item := range compacted {
+			if !dateRange.Contains(item.header.Time) {
+				continue
+			}
 			events = append(events, activity.Event{
 				Date:    item.header.Time,
 				Source:  s.Name(),
@@ -51,7 +57,7 @@ func (s Source) Collect(_ context.Context) ([]activity.Event, error) {
 			})
 		}
 	}
-	slog.Info("collected activity", "source", s.Name(), "events", len(events))
+	slog.Info("collected activity", "source", s.Name(), "events", total, "filtered", len(events))
 	return events, nil
 }
 

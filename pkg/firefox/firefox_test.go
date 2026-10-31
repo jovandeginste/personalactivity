@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"github.com/jovandeginste/personalactivity/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
@@ -71,7 +72,7 @@ Default=1
 			(14, 10, 3, 1793384829750740, 1);
 	`).Error)
 
-	events, err := New(firefoxDir).Collect(context.Background())
+	events, err := New(firefoxDir).Collect(context.Background(), activity.Range{})
 	require.NoError(t, err)
 	require.Len(t, events, 2)
 

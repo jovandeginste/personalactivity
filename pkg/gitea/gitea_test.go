@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/jovandeginste/personalactivity/pkg/activity"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCollectSkipsWhenGiteaAPIEnvNotSet(t *testing.T) {
 	t.Setenv("GITEA_API", "")
 
-	events, err := New("user").Collect(context.Background())
+	events, err := New("user").Collect(context.Background(), activity.Range{})
 	require.NoError(t, err)
 	require.Empty(t, events)
 }

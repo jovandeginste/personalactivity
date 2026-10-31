@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"github.com/jovandeginste/personalactivity/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
@@ -47,7 +48,7 @@ func TestCollectSentMessages(t *testing.T) {
 			(13, 'Old draft', 'Deleted mail', '', 'Jo', 'Alice');
 	`).Error)
 
-	events, err := New(dbPath).Collect(context.Background())
+	events, err := New(dbPath).Collect(context.Background(), activity.Range{})
 	require.NoError(t, err)
 	require.Len(t, events, 1)
 
@@ -94,7 +95,7 @@ func TestCollectCalendarEvents(t *testing.T) {
 			('cal-work', 'evt-1', NULL, 'ATTENDEE;PARTSTAT=NEEDS-ACTION:mailto:bob@example.com');
 	`).Error)
 
-	events, err := New(rootDir).Collect(context.Background())
+	events, err := New(rootDir).Collect(context.Background(), activity.Range{})
 	require.NoError(t, err)
 	require.Len(t, events, 1)
 

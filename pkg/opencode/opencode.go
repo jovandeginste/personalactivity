@@ -38,7 +38,7 @@ type messageData struct {
 	Text string `json:"text"`
 }
 
-func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
+func (s Source) Collect(ctx context.Context, dateRange activity.Range) ([]activity.Event, error) {
 	if _, err := os.Stat(s.path); err != nil {
 		slog.Warn("skipping source", "source", s.Name(), "error", err)
 		return []activity.Event{}, nil
@@ -63,6 +63,9 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 
 	events := make([]activity.Event, 0, len(messages))
 	for _, message := range messages {
+		if !dateRange.Contains(time.UnixMilli(message.TimeCreated)) {
+			continue
+		}
 		event, ok, err := s.event(message)
 		if err != nil {
 			return nil, err
@@ -71,7 +74,7 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 			events = append(events, event)
 		}
 	}
-	slog.Info("collected activity", "source", s.Name(), "events", len(events))
+	slog.Info("collected activity", "source", s.Name(), "events", len(messages), "filtered", len(events))
 	return events, nil
 }
 

@@ -50,7 +50,7 @@ type commit struct {
 	Timestamp time.Time `json:"Timestamp"`
 }
 
-func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
+func (s Source) Collect(ctx context.Context, dateRange activity.Range) ([]activity.Event, error) {
 	apiURL := strings.TrimRight(os.Getenv("GITEA_API"), "/")
 	if apiURL == "" {
 		slog.Warn("skipping source; GITEA_API is not set", "source", s.Name())
@@ -106,8 +106,9 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 			Attributes: map[string]string{"op_type": item.OpType, "ref_name": item.RefName, "content": item.Content},
 		})
 	}
-	slog.Info("collected activity", "source", s.Name(), "events", len(events))
-	return events, nil
+	filtered := dateRange.Filter(events)
+	slog.Info("collected activity", "source", s.Name(), "events", len(events), "filtered", len(filtered))
+	return filtered, nil
 }
 
 func commitEvents(item feedEvent) ([]activity.Event, error) {

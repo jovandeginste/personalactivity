@@ -35,7 +35,7 @@ type history struct {
 
 func (history) TableName() string { return "history" }
 
-func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
+func (s Source) Collect(ctx context.Context, dateRange activity.Range) ([]activity.Event, error) {
 	if _, err := os.Stat(s.path); err != nil {
 		slog.Warn("skipping source", "source", s.Name(), "error", err)
 		return []activity.Event{}, nil
@@ -58,17 +58,21 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 	}
 	events := make([]activity.Event, 0, len(rows))
 	for _, row := range rows {
+		date := timestamp(row.Timestamp)
+		if !dateRange.Contains(date) {
+			continue
+		}
 		cwd := homePath(row.Cwd)
 		host, _, _ := strings.Cut(row.Hostname, ":")
 		events = append(events, activity.Event{
-			Date: timestamp(row.Timestamp), Source: s.Name(), Topic: cwd,
+			Date: date, Source: s.Name(), Topic: cwd,
 			Summary: row.Command,
 			Attributes: map[string]string{
 				"cwd": cwd, "exit": strconv.Itoa(row.Exit), "duration": strconv.FormatInt(row.Duration, 10), "host": host,
 			},
 		})
 	}
-	slog.Info("collected activity", "source", s.Name(), "events", len(events))
+	slog.Info("collected activity", "source", s.Name(), "events", len(rows), "filtered", len(events))
 	return events, nil
 }
 

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jovandeginste/personalactivity/pkg/activity"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +23,7 @@ func TestCollectSkipsWhenNoTokenFound(t *testing.T) {
 	t.Setenv("GH_PATH", "/nonexistent")
 	t.Setenv("PATH", t.TempDir())
 
-	events, err := New().Collect(context.Background())
+	events, err := New().Collect(context.Background(), activity.Range{From: nil, To: nil})
 	require.NoError(t, err)
 	require.Empty(t, events)
 }
@@ -72,7 +73,7 @@ func TestCollectFetchesCommitsAndEvents(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	events, err := Source{baseURL: server.URL + "/api/v3/"}.Collect(context.Background())
+	events, err := Source{baseURL: server.URL + "/api/v3/"}.Collect(context.Background(), activity.Range{From: nil, To: nil})
 	require.NoError(t, err)
 	require.Len(t, events, 2)
 

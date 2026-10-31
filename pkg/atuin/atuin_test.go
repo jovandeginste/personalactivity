@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"github.com/jovandeginste/personalactivity/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
@@ -42,7 +43,7 @@ func TestCollectFiltersByCurrentHostname(t *testing.T) {
 		{Timestamp: 1_700_000_002, Command: "excluded", Hostname: hostname},
 	}).Error)
 
-	events, err := New(path).Collect(context.Background())
+	events, err := New(path).Collect(context.Background(), activity.Range{})
 	require.NoError(t, err)
 	require.Len(t, events, 1)
 	require.Equal(t, "included", events[0].Summary)

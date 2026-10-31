@@ -54,7 +54,7 @@ type calendarEvent struct {
 	Attendees   string `gorm:"column:attendees"`
 }
 
-func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
+func (s Source) Collect(ctx context.Context, dateRange activity.Range) ([]activity.Event, error) {
 	messagePaths, calendarPaths, err := databasePaths(s.path)
 	if err != nil {
 		slog.Warn("skipping source", "source", s.Name(), "error", err)
@@ -62,22 +62,25 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 	}
 	slog.Info("collecting activity", "source", s.Name())
 
+	var total int
 	var events []activity.Event
 	for _, dbPath := range messagePaths {
-		profileEvents, err := s.collectMessagesDB(ctx, dbPath)
+		profileEvents, count, err := s.collectMessagesDB(ctx, dbPath, dateRange)
 		if err != nil {
 			return nil, err
 		}
+		total += count
 		events = append(events, profileEvents...)
 	}
 	for _, dbPath := range calendarPaths {
-		profileEvents, err := s.collectCalendarDB(ctx, dbPath)
+		profileEvents, count, err := s.collectCalendarDB(ctx, dbPath, dateRange)
 		if err != nil {
 			return nil, err
 		}
+		total += count
 		events = append(events, profileEvents...)
 	}
-	slog.Info("collected activity", "source", s.Name(), "events", len(events))
+	slog.Info("collected activity", "source", s.Name(), "events", total, "filtered", len(events))
 	return events, nil
 }
 
@@ -143,10 +146,10 @@ const calendarEventsQuery = `
 	  )
 `
 
-func (s Source) collectMessagesDB(ctx context.Context, dbPath string) ([]activity.Event, error) {
+func (s Source) collectMessagesDB(ctx context.Context, dbPath string, dateRange activity.Range) ([]activity.Event, int, error) {
 	db, err := openReadOnlyDB(dbPath)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	sqlDB, err := db.DB()
 	if err == nil {
@@ -155,14 +158,17 @@ func (s Source) collectMessagesDB(ctx context.Context, dbPath string) ([]activit
 
 	var rows []sentMessage
 	if err := db.WithContext(ctx).Raw(sentMessagesQuery).Scan(&rows).Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	events := make([]activity.Event, 0, len(rows))
 	for _, row := range rows {
+		if !dateRange.Contains(time.UnixMicro(row.Date)) {
+			continue
+		}
 		events = append(events, s.messageEvent(row))
 	}
-	return events, nil
+	return events, len(rows), nil
 }
 
 func (s Source) messageEvent(row sentMessage) activity.Event {
@@ -205,10 +211,10 @@ func (s Source) messageEvent(row sentMessage) activity.Event {
 	}
 }
 
-func (s Source) collectCalendarDB(ctx context.Context, dbPath string) ([]activity.Event, error) {
+func (s Source) collectCalendarDB(ctx context.Context, dbPath string, dateRange activity.Range) ([]activity.Event, int, error) {
 	db, err := openReadOnlyDB(dbPath)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	sqlDB, err := db.DB()
 	if err == nil {
@@ -217,15 +223,18 @@ func (s Source) collectCalendarDB(ctx context.Context, dbPath string) ([]activit
 
 	var rows []calendarEvent
 	if err := db.WithContext(ctx).Raw(calendarEventsQuery).Scan(&rows).Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	calNames := calendarNames(dbPath)
 	events := make([]activity.Event, 0, len(rows))
 	for _, row := range rows {
+		if !dateRange.Contains(time.UnixMicro(row.EventStart)) {
+			continue
+		}
 		events = append(events, s.calendarActivityEvent(row, calNames[row.CalID]))
 	}
-	return events, nil
+	return events, len(rows), nil
 }
 
 func (s Source) calendarActivityEvent(row calendarEvent, calendar string) activity.Event {

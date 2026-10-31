@@ -33,7 +33,7 @@ type Source struct {
 func New() Source           { return Source{baseURL: ""} }
 func (Source) Name() string { return sourceName }
 
-func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
+func (s Source) Collect(ctx context.Context, dateRange activity.Range) ([]activity.Event, error) {
 	host, token := resolveAuth(ctx)
 
 	if token == "" {
@@ -67,10 +67,11 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 	}
 
 	events = append(events, feedEvents...)
+	filtered := dateRange.Filter(events)
 
-	slog.Info("collected activity", "source", s.Name(), "events", len(events))
+	slog.Info("collected activity", "source", s.Name(), "events", len(events), "filtered", len(filtered))
 
-	return events, nil
+	return filtered, nil
 }
 
 func (s Source) newClient(host, token string) (*gogithub.Client, error) {

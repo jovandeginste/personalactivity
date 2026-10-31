@@ -15,8 +15,8 @@ type testSource struct {
 	err    error
 }
 
-func (s testSource) Name() string                             { return s.name }
-func (s testSource) Collect(context.Context) ([]Event, error) { return s.events, s.err }
+func (s testSource) Name() string                                    { return s.name }
+func (s testSource) Collect(_ context.Context, r Range) ([]Event, error) { return r.Filter(s.events), s.err }
 
 func TestCollectFiltersAndSorts(t *testing.T) {
 	base := time.Date(2026, 10, 30, 0, 0, 0, 0, time.UTC)
@@ -66,6 +66,14 @@ func TestParseRangeDefaultsToToday(t *testing.T) {
 	require.Equal(t, 0, rangeFilter.From.Minute())
 	require.Equal(t, 0, rangeFilter.From.Second())
 	require.False(t, rangeFilter.To.Before(*rangeFilter.From))
+	require.False(t, rangeFilter.To.After(time.Now().Add(time.Second)))
+}
+
+func TestParseRangeDefaultsToWhenOnlyFromIsSet(t *testing.T) {
+	rangeFilter, err := ParseRange("2026-10-25", "")
+	require.NoError(t, err)
+	require.Equal(t, "2026-10-25T00:00:00Z", rangeFilter.From.Format(time.RFC3339))
+	require.NotNil(t, rangeFilter.To)
 	require.False(t, rangeFilter.To.After(time.Now().Add(time.Second)))
 }
 

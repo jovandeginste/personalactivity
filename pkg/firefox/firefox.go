@@ -35,7 +35,7 @@ type visit struct {
 	Description string `gorm:"column:description"`
 }
 
-func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
+func (s Source) Collect(ctx context.Context, dateRange activity.Range) ([]activity.Event, error) {
 	dbPath, err := placesPath(s.path)
 	if err != nil {
 		slog.Warn("skipping source", "source", s.Name(), "error", err)
@@ -79,6 +79,9 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 	events := make([]activity.Event, 0, len(rows))
 	for _, row := range rows {
 		date := time.UnixMicro(row.VisitDate)
+		if !dateRange.Contains(date) {
+			continue
+		}
 		rawURL := cleanURL(row.URL)
 		title := strings.TrimSpace(row.Title)
 		description := strings.TrimSpace(row.Description)
@@ -116,7 +119,7 @@ func (s Source) Collect(ctx context.Context) ([]activity.Event, error) {
 			},
 		})
 	}
-	slog.Info("collected activity", "source", s.Name(), "events", len(events))
+	slog.Info("collected activity", "source", s.Name(), "events", len(rows), "filtered", len(events))
 	return events, nil
 }
 
