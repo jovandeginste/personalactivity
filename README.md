@@ -15,6 +15,7 @@ When summarizing a workday or checking what you worked on during a specific peri
 - **`opencode`**: User prompts and session metadata read in read-only mode from `~/.local/share/opencode/opencode.db`.
 - **`thunderbird`**: Sent emails (timestamps, sender and destination addresses, subjects, and bodies) from `~/.thunderbird/*/global-messages-db.sqlite` and calendar events (timestamps, calendar names, titles, locations, descriptions, organizers, and attendees) from `~/.thunderbird/*/calendar-data/cache.sqlite`, read in read-only mode.
 - **`firefox`**: Visited URLs (visit timestamps, hosts, page titles, URLs, and descriptions) read in read-only mode from `places.sqlite` in the default Firefox profile resolved via `~/.mozilla/firefox/profiles.ini`.
+- **`teams`**: Sent and received Microsoft Teams messages read in read-only mode from `~/.local/share/teams-archive/teams.db` via `github.com/jovandeginste/teams-tui/pkg/archive`.
 
 ## Implementation
 
@@ -28,6 +29,7 @@ The project is written in Go and structured into reusable packages under `./pkg/
 - `pkg/opencode`: Queries user session messages from the local OpenCode SQLite database.
 - `pkg/thunderbird`: Queries sent emails (`global-messages-db.sqlite`) and calendar events (`calendar-data/cache.sqlite`) from local Thunderbird profiles.
 - `pkg/firefox`: Resolves the default Firefox profile from `profiles.ini` and queries visited URLs and metadata from `places.sqlite` in read-only mode.
+- `pkg/teams`: Queries sent and received messages from the local Teams SQLite archive via `teams-tui/pkg/archive`.
 
 ## Build and Install
 
@@ -61,7 +63,7 @@ personalactivity [flags]
 
 - `--from string`: Start date (`YYYY-MM-DD` or `RFC3339`).
 - `--to string`: End date (`YYYY-MM-DD` or `RFC3339`). When given as `YYYY-MM-DD`, the entire end day is included.
-- `-s, --source strings`: Source(s) to collect (`gitea`, `github`, `atuin`, `vimundo`, `opencode`, `thunderbird`, `firefox`). Can be repeated or comma-separated. Defaults to all sources.
+- `-s, --source strings`: Source(s) to collect (`gitea`, `github`, `atuin`, `vimundo`, `opencode`, `thunderbird`, `firefox`, `teams`). Can be repeated or comma-separated. Defaults to all sources.
 - `-o, --format string`: Output format: `table` or `json` (default `table`).
 
 ### Examples

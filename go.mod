@@ -6,6 +6,7 @@ require (
 	github.com/42wim/httpsig v1.3.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/google/go-github/v93 v93.0.0
+	github.com/jovandeginste/teams-tui v0.0.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/crypto v0.58.0
@@ -13,7 +14,10 @@ require (
 	gorm.io/gorm v1.31.2
 )
 
+replace github.com/jovandeginste/teams-tui => ../teams-tui
+
 require (
+	github.com/aquasecurity/table v1.11.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/glebarez/go-sqlite v1.23.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
@@ -24,11 +28,14 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	modernc.org/libc v1.79.1 // indirect
