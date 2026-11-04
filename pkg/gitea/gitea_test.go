@@ -28,3 +28,9 @@ func TestCommitEventsCreatesAnEventForEachCommit(t *testing.T) {
 	require.Equal(t, "first", events[0].Attributes["sha1"])
 	require.True(t, events[0].Date.Before(events[1].Date))
 }
+
+func TestCommitEventsSkipsEmptyContent(t *testing.T) {
+	events, err := commitEvents(feedEvent{OpType: "commit_repo"})
+	require.NoError(t, err)
+	require.Empty(t, events)
+}

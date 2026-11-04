@@ -112,6 +112,9 @@ func (s Source) Collect(ctx context.Context, dateRange activity.Range) ([]activi
 }
 
 func commitEvents(item feedEvent) ([]activity.Event, error) {
+	if item.Content == "" {
+		return nil, nil
+	}
 	var content commitContent
 	if err := json.Unmarshal([]byte(item.Content), &content); err != nil {
 		return nil, fmt.Errorf("decode commit activity: %w", err)
