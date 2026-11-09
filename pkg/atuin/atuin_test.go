@@ -2,7 +2,6 @@ package atuin
 
 import (
 	"context"
-	"os"
 	"os/user"
 	"path/filepath"
 	"testing"
@@ -30,22 +29,22 @@ func TestHomePath(t *testing.T) {
 	require.Equal(t, "/tmp/project", homePath("/tmp/project"))
 }
 
-func TestCollectFiltersByCurrentHostname(t *testing.T) {
-	hostname, err := os.Hostname()
-	require.NoError(t, err)
+func TestCollectFiltersNativeCommands(t *testing.T) {
+	agentKind := 2
 	path := filepath.Join(t.TempDir(), "history.db")
 	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&history{}))
 	require.NoError(t, db.Create([]history{
-		{Timestamp: 1_700_000_000, Command: "included", Hostname: hostname + ":session"},
-		{Timestamp: 1_700_000_001, Command: "excluded", Hostname: "other:session"},
-		{Timestamp: 1_700_000_002, Command: "excluded", Hostname: hostname},
+		{Timestamp: 1_700_000_000, Command: "included", Hostname: "laptop:jo", Author: "jo"},
+		{Timestamp: 1_700_000_001, Command: "included", Hostname: "server:u0044579", Author: "u0044579"},
+		{Timestamp: 1_700_000_002, Command: "excluded", Hostname: "server:u0044579", Author: "opencode", AuthorKind: &agentKind},
+		{Timestamp: 1_700_000_003, Command: "included", Hostname: "server:unknown-user", Author: "unknown-user"},
 	}).Error)
 
 	events, err := New(path).Collect(context.Background(), activity.Range{})
 	require.NoError(t, err)
-	require.Len(t, events, 1)
+	require.Len(t, events, 3)
 	require.Equal(t, "included", events[0].Summary)
-	require.Equal(t, hostname, events[0].Attributes["host"])
+	require.Equal(t, "laptop", events[0].Attributes["host"])
 }

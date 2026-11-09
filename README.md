@@ -10,7 +10,7 @@ When summarizing a workday or checking what you worked on during a specific peri
 
 - **`gitea`**: Activity feed and commits for the current OS user from the Gitea API server configured in `GITEA_API`, authenticated via `httpsig` using the SSH certificate in `ssh-agent`.
 - **`github`**: User activity feed and authored commits from the GitHub REST API via `github.com/google/go-github`, authenticated using `gh` CLI authentication logic (environment variables, `~/.config/gh/hosts.yml`, or `gh auth token`).
-- **`atuin`**: Local shell command history read in read-only mode from `~/.local/share/atuin/history.db`.
+- **`atuin`**: Native shell command history (agent-run commands excluded) from all hosts, read in read-only mode from `~/.local/share/atuin/history.db`.
 - **`vimundo`**: Neovim/Vim undo history files parsed from `~/.local/state/nvf/undo`.
 - **`opencode`**: User prompts and session metadata read in read-only mode from `~/.local/share/opencode/opencode.db`.
 - **`thunderbird`**: Sent emails (timestamps, sender and destination addresses, subjects, and bodies) from `~/.thunderbird/*/global-messages-db.sqlite` and calendar events (timestamps, calendar names, titles, locations, descriptions, organizers, and attendees) from `~/.thunderbird/*/calendar-data/cache.sqlite`, read in read-only mode.
